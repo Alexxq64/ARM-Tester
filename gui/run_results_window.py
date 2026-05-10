@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QHBoxLayout, QComboBox, QPushButton
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QHBoxLayout, QComboBox, QPushButton, QFileDialog, QMessageBox)
 from PySide6.QtCore import Qt
 
 class RunResultsWindow(QDialog):
@@ -36,6 +36,14 @@ class RunResultsWindow(QDialog):
         self.btn_close.clicked.connect(self.close)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_close)
+        layout.addLayout(btn_layout)
+
+        # Кнопка сохранения отчёта
+        btn_layout = QHBoxLayout()
+        self.btn_save_report = QPushButton("Сохранить отчёт")
+        self.btn_save_report.clicked.connect(self.save_report)
+        btn_layout.addStretch()
+        btn_layout.addWidget(self.btn_save_report)
         layout.addLayout(btn_layout)
 
         # Сортировка
@@ -90,3 +98,34 @@ class RunResultsWindow(QDialog):
         
         self.display_results(self.all_results)
         self.apply_filter()
+
+    def save_report(self):
+        from PySide6.QtWidgets import QFileDialog
+        from reports.report_generator import ReportGenerator
+        from db.database import Database
+        from datetime import datetime
+        from pathlib import Path
+        from config import PROJECT_ROOT
+        
+        # Создаём папку для отчётов, если её нет
+        reports_dir = PROJECT_ROOT / "reports" / "generated"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Предлагаем сохранить в эту папку
+        default_path = str(reports_dir / f"report_run_{self.run_id}.html")
+        
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить отчёт", default_path, "HTML files (*.html)"
+        )
+        
+        if file_path:
+            try:
+                ReportGenerator.generate_report(self.run_id, file_path)
+                
+                # Сохраняем запись в БД
+                db = Database("arm_testing.db")
+                db.add_report(self.run_id, file_path, datetime.now().isoformat())
+                
+                QMessageBox.information(self, "Успех", f"Отчёт сохранён: {file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить отчёт:\n{str(e)}")

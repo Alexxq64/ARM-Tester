@@ -69,7 +69,15 @@ class RunsHistoryWindow(QDialog):
         self.btn_apply.clicked.connect(self.load_runs)
         self.btn_reset.clicked.connect(self.reset_filter)
         self.table.doubleClicked.connect(self.show_results)
+
+        self.btn_analytics = QPushButton("Аналитика (график)")
+        btn_layout.addWidget(self.btn_analytics)
+        self.btn_analytics.clicked.connect(self.show_analytics)
         
+        self.btn_reports = QPushButton("Отчёты")
+        btn_layout.addWidget(self.btn_reports)
+        self.btn_reports.clicked.connect(self.show_reports)
+
         # Сортировка по клику на заголовок
         self.table.horizontalHeader().sectionClicked.connect(self.sort_by_column)
         
@@ -185,3 +193,17 @@ class RunsHistoryWindow(QDialog):
             for run_id in run_ids:
                 db.delete_test_run(run_id)
             self.load_runs()
+
+    def show_analytics(self):
+        from gui.analytics_chart import AnalyticsChartWindow
+        analytics_window = AnalyticsChartWindow(self.project_id, self)
+        analytics_window.exec()
+
+    def show_reports(self):
+        run_ids = self.get_selected_run_ids()
+        if len(run_ids) != 1:
+            QMessageBox.warning(self, "Ошибка", "Выберите один запуск для просмотра отчётов.")
+            return
+        from gui.reports_list_window import ReportsListWindow
+        reports_window = ReportsListWindow(run_ids[0], self)
+        reports_window.exec()
