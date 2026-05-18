@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 from db.database import Database
 
 class AnalyticsChartWindow(QDialog):
-    def __init__(self, project_id, parent=None):
+    def __init__(self, project_id, db_path, parent=None):
         super().__init__(parent)
         self.project_id = project_id
+        self.db_path = db_path
         self.setWindowTitle("Динамика прохождения тестов")
         self.setMinimumSize(800, 500)
 
@@ -31,7 +32,7 @@ class AnalyticsChartWindow(QDialog):
         self.draw_chart()
 
     def draw_chart(self):
-        db = Database("arm_testing.db")
+        db = Database(self.db_path)
         runs = db.get_test_runs(self.project_id)
 
         if not runs:

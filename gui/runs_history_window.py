@@ -7,9 +7,10 @@ from db.database import Database
 from gui.run_results_window import RunResultsWindow
 
 class RunsHistoryWindow(QDialog):
-    def __init__(self, project_id, parent=None):
+    def __init__(self, project_id, db_path, parent=None):
         super().__init__(parent)
         self.project_id = project_id
+        self.db_path = db_path
         self.setWindowTitle("История запусков")
         self.setMinimumSize(800, 500)
 
@@ -99,9 +100,12 @@ class RunsHistoryWindow(QDialog):
         self.load_runs()
 
     def load_runs(self):
-        db = Database("arm_testing.db")
+        print(f"DEBUG: project_id = {self.project_id}")
+        print(f"DEBUG: db_path = {self.db_path}")
+        db = Database(self.db_path)
         date_from, date_to = self.get_filter_params()
         runs = db.get_test_runs(self.project_id, date_from, date_to)
+        print(f"DEBUG: runs found = {len(runs)}")
 
         self.current_data = []
         for run_id, start_time, end_time, status in runs:
@@ -173,7 +177,7 @@ class RunsHistoryWindow(QDialog):
         if len(run_ids) != 1:
             QMessageBox.warning(self, "Ошибка", "Выберите один запуск для просмотра результатов.")
             return
-        results_window = RunResultsWindow(run_ids[0], self)
+        results_window = RunResultsWindow(run_ids[0], self.db_path, self)
         results_window.exec()
 
     def delete_selected(self):
@@ -189,14 +193,14 @@ class RunsHistoryWindow(QDialog):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            db = Database("arm_testing.db")
+            db = Database(self.db_path)
             for run_id in run_ids:
                 db.delete_test_run(run_id)
             self.load_runs()
 
     def show_analytics(self):
         from gui.analytics_chart import AnalyticsChartWindow
-        analytics_window = AnalyticsChartWindow(self.project_id, self)
+        analytics_window = AnalyticsChartWindow(self.project_id, self.db_path, self)
         analytics_window.exec()
 
     def show_reports(self):
@@ -205,5 +209,5 @@ class RunsHistoryWindow(QDialog):
             QMessageBox.warning(self, "Ошибка", "Выберите один запуск для просмотра отчётов.")
             return
         from gui.reports_list_window import ReportsListWindow
-        reports_window = ReportsListWindow(run_ids[0], self)
+        reports_window = ReportsListWindow(run_ids[0], self.db_path, self)
         reports_window.exec()

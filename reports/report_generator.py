@@ -7,25 +7,25 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from db.database import Database
 
+
 class ReportGenerator:
     @staticmethod
-    def generate_report(run_id, output_path):
-        db = Database("arm_testing.db")
+    def generate_report(run_id, output_path, db_path=None):
+        if db_path:
+            db = Database(db_path)
+        else:
+            db = Database("arm_testing.db")
         
-        # Получаем информацию о запуске
         run_info = db.get_run_info(run_id)
         if not run_info:
             raise ValueError(f"Запуск с ID {run_id} не найден")
         
-        # Получаем результаты
         results_data = db.get_test_results_by_run(run_id)
         
-        # Считаем статистику
         total_tests = len(results_data)
         passed = sum(1 for r in results_data if r[2] == "passed")
         failed = sum(1 for r in results_data if r[2] == "failed")
         
-        # Преобразуем результаты для шаблона
         results = []
         for func_name, file_path, status, error in results_data:
             results.append({
@@ -35,12 +35,10 @@ class ReportGenerator:
                 "error_message": error if error else ""
             })
         
-        # Загружаем шаблон
         template_dir = Path(__file__).parent
         env = Environment(loader=FileSystemLoader(str(template_dir)))
         template = env.get_template("report_template.html")
         
-        # Генерируем HTML
         html_content = template.render(
             run_id=run_id,
             start_time=run_info["start_time"],
@@ -51,7 +49,6 @@ class ReportGenerator:
             generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
         
-        # Сохраняем файл
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
         

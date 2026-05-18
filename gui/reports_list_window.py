@@ -8,9 +8,10 @@ import sys
 from db.database import Database
 
 class ReportsListWindow(QDialog):
-    def __init__(self, run_id, parent=None):
+    def __init__(self, run_id, db_path, parent=None):
         super().__init__(parent)
         self.run_id = run_id
+        self.db_path = db_path
         self.setWindowTitle(f"Отчёты для запуска #{run_id}")
         self.setMinimumSize(700, 400)
 
@@ -42,7 +43,7 @@ class ReportsListWindow(QDialog):
         self.load_reports()
 
     def load_reports(self):
-        db = Database("arm_testing.db")
+        db = Database(self.db_path)
         reports = db.get_reports_by_run(self.run_id)
 
         self.table.setRowCount(len(reports))
@@ -71,15 +72,12 @@ class ReportsListWindow(QDialog):
             QMessageBox.warning(self, "Ошибка", f"Файл не найден:\n{file_path}")
             return
         
-        # Преобразуем WSL-путь в Windows-путь
-        # /home/me/arm_testing/reports/generated/report.html
-        # -> \\wsl.localhost\Ubuntu\home\me\arm_testing\reports\generated\report.html
-        win_path = file_path.replace("/home/me", "\\\\wsl.localhost\\Ubuntu\\home\\me")
+        # Конвертируем WSL-путь в Windows-путь
+        # /mnt/c/Users/User/Desktop/... -> C:\Users\User\Desktop\...
+        win_path = file_path.replace("/mnt/c/", "C:/").replace("/", "\\")
         
-        try:
-            subprocess.Popen(["cmd.exe", "/c", "start", win_path])
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось открыть файл:\n{str(e)}")
+        # Открываем через cmd.exe start
+        subprocess.Popen(["cmd.exe", "/c", "start", "", win_path])
 
     def delete_report(self):
         selected = self.get_selected_report()
@@ -96,6 +94,6 @@ class ReportsListWindow(QDialog):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            db = Database("arm_testing.db")
+            db = Database(self.db_path)
             db.delete_report(report_id)
             self.load_reports()
