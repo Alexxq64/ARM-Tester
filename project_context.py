@@ -1,8 +1,10 @@
 """ProjectContext — управление путями и рабочей областью проекта (.arm/)"""
 
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import sys
+import os
+import tempfile
 
 
 @dataclass
@@ -11,14 +13,37 @@ class ProjectContext:
     
     project_root: Path
     arm_dir_name: str = ".arm"
+    _is_fallback: bool = field(default=False, init=False)
+    _fallback_dir: Path = field(default=None, init=False)
     
     def __post_init__(self):
         """Нормализует путь после создания"""
         self.project_root = self.project_root.resolve()
+        self._check_permissions()
+    
+    def _check_permissions(self):
+        """Проверяет права на запись в проект и определяет режим работы"""
+        arm_path = self.project_root / self.arm_dir_name
+        if arm_path.exists():
+            can_write = os.access(arm_path, os.W_OK)
+        else:
+            can_write = os.access(self.project_root, os.W_OK)
+        
+        if not can_write:
+            self._is_fallback = True
+            self._fallback_dir = Path(tempfile.gettempdir()) / f".arm_{self.project_root.name}"
+            self._fallback_dir.mkdir(parents=True, exist_ok=True)
+    
+    @property
+    def is_fallback_mode(self) -> bool:
+        """Возвращает True, если используется временная папка вместо .arm/"""
+        return self._is_fallback
     
     @property
     def arm_dir(self) -> Path:
-        """Папка .arm/ внутри проекта"""
+        """Папка .arm/ внутри проекта (или временная папка при fallback)"""
+        if self._is_fallback:
+            return self._fallback_dir
         return self.project_root / self.arm_dir_name
     
     @property
@@ -71,6 +96,10 @@ class ProjectContext:
     
     def ensure_dirs(self) -> None:
         """Создаёт все директории .arm/ и добавляет .gitignore"""
+        if self._is_fallback:
+            # временная папка уже создана в _check_permissions
+            return
+        
         dirs = [
             self.arm_dir,
             self.reports_dir,

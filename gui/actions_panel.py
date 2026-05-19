@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QFrame
 from PySide6.QtCore import Signal
 
 
@@ -18,35 +18,43 @@ class ActionsPanel(QWidget):
         super().__init__(parent)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
         
-        # Проекты
-        self.btn_add_project = QPushButton("+ Добавить проект")
-        self.btn_edit_project = QPushButton("✎ Редактировать проект")
-        self.btn_delete_project = QPushButton("✖ Удалить проект")
-        
-        # Тесты
-        self.btn_add_test = QPushButton("+ Добавить тест")
-        self.btn_edit_test = QPushButton("✎ Редактировать тест")
-        self.btn_delete_test = QPushButton("✖ Удалить тест")
-        
-        # Запуск
-        self.btn_run_selected = QPushButton("▶️ Запустить выбранные")
-        self.btn_run_all = QPushButton("▶️ Запустить все активные")
-        
-        # История и аналитика
-        self.btn_history = QPushButton("📋 История запусков")
-        self.btn_analytics = QPushButton("📊 Аналитика")
+        # === Группа 1: Проекты ===
+        self.btn_add_project = QPushButton("+ Проект")
+        self.btn_edit_project = QPushButton("✎ Проект")
+        self.btn_delete_project = QPushButton("✖ Проект")
         
         layout.addWidget(self.btn_add_project)
         layout.addWidget(self.btn_edit_project)
         layout.addWidget(self.btn_delete_project)
+        layout.addWidget(self._separator())
+        
+        # === Группа 2: Тесты ===
+        self.btn_add_test = QPushButton("+ Тест")
+        self.btn_edit_test = QPushButton("✎ Тест")
+        self.btn_delete_test = QPushButton("✖ Тест")
+        
         layout.addWidget(self.btn_add_test)
         layout.addWidget(self.btn_edit_test)
         layout.addWidget(self.btn_delete_test)
+        layout.addWidget(self._separator())
+        
+        # === Группа 3: Запуск ===
+        self.btn_run_selected = QPushButton("▶ Выбранные")
+        self.btn_run_all = QPushButton("▶ Все")
+        
         layout.addWidget(self.btn_run_selected)
         layout.addWidget(self.btn_run_all)
+        layout.addWidget(self._separator())
+        
+        # === Группа 4: Отчёты ===
+        self.btn_history = QPushButton("📋 История")
+        self.btn_analytics = QPushButton("📊 Аналитика")
+        
         layout.addWidget(self.btn_history)
         layout.addWidget(self.btn_analytics)
+        
         layout.addStretch()
         
         # Сигналы
@@ -60,3 +68,10 @@ class ActionsPanel(QWidget):
         self.btn_run_all.clicked.connect(self.run_all_clicked.emit)
         self.btn_history.clicked.connect(self.history_clicked.emit)
         self.btn_analytics.clicked.connect(self.analytics_clicked.emit)
+    
+    def _separator(self):
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setFrameShadow(QFrame.Shadow.Sunken)
+        sep.setFixedWidth(2)
+        return sep

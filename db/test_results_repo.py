@@ -1,3 +1,4 @@
+# db/test_results_repo.py
 from db.connection import DBConnection
 
 class TestResultsRepo(DBConnection):
@@ -16,7 +17,7 @@ class TestResultsRepo(DBConnection):
         with self._get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
-                SELECT test_function_name, test_file_path, status, error_message
+                SELECT result_id, run_id, test_id, test_function_name, test_file_path, status, execution_time, error_message
                 FROM test_results
                 WHERE run_id = ?
                 ORDER BY result_id

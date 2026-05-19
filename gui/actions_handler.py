@@ -201,14 +201,28 @@ class ActionsHandler:
             self.load_data()
     
     def run_selected(self):
-        selected = self.table.get_selected_item()
-        if not selected:
-            QMessageBox.warning(self.parent, "Ошибка", "Выберите тест для запуска.")
+        # Получаем выделенные строки
+        selected_rows = self.table.get_selected_test_ids()
+        if not selected_rows:
+            QMessageBox.warning(self.parent, "Ошибка", "Выберите тесты для запуска.")
             return
         
-        test_name = selected.get("test_name")
-        project_name = selected.get("project_name")
-        root_path = self._get_root_path(project_name)
+        # Собираем test_id из выделенных строк
+        test_ids = []
+        project_name = None
+        root_path = None
+        
+        for row in selected_rows:
+            if hasattr(self.table, 'full_data') and row < len(self.table.full_data):
+                item = self.table.full_data[row]
+                test_ids.append(item.get("test_id"))
+                if not project_name:
+                    project_name = item.get("project_name")
+                    root_path = self._get_root_path(project_name)
+        
+        if not test_ids:
+            QMessageBox.warning(self.parent, "Ошибка", "Не удалось получить ID тестов.")
+            return
         
         if not root_path:
             QMessageBox.warning(self.parent, "Ошибка", "У проекта нет корневой папки.")
@@ -219,39 +233,29 @@ class ActionsHandler:
             QMessageBox.warning(self.parent, "Ошибка", "Локальная БД проекта не найдена.")
             return
         
-        from db.database import Database
-        local_db = Database(str(local_db_path))
-        
-        # Находим тест
-        tests = local_db.get_test_cases(1)
-        test_id = None
-        test_path = None
-        for t in tests:
-            if t[1] == test_name:
-                test_id = t[0]
-                test_path = t[3]
-                break
-        
-        if not test_id:
-            QMessageBox.warning(self.parent, "Ошибка", "Тест не найден.")
-            return
-        
         # Создаём контекст проекта
         context = ProjectContext(Path(root_path))
         context.ensure_dirs()
         
-        # Запускаем тест
-        TestRunner.run_tests(self.parent, context, 1, [test_id])
+        # Запускаем тесты
+        TestRunner.run_tests(self.parent, context, 1, test_ids)
         self.load_data()
-    
+
     def run_all(self):
-        selected = self.table.get_selected_item()
-        if not selected:
+        # Получаем выделенные строки
+        selected_rows = self.table.get_selected_test_ids()
+        if not selected_rows:
             QMessageBox.warning(self.parent, "Ошибка", "Выберите проект для запуска всех тестов.")
             return
         
-        project_name = selected.get("project_name")
-        root_path = self._get_root_path(project_name)
+        # Берём проект из первой выделенной строки
+        if hasattr(self.table, 'full_data') and selected_rows[0] < len(self.table.full_data):
+            item = self.table.full_data[selected_rows[0]]
+            project_name = item.get("project_name")
+            root_path = self._get_root_path(project_name)
+        else:
+            QMessageBox.warning(self.parent, "Ошибка", "Не удалось определить проект.")
+            return
         
         if not root_path:
             QMessageBox.warning(self.parent, "Ошибка", "У проекта нет корневой папки.")

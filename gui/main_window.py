@@ -1,3 +1,4 @@
+# gui/main_window.py
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -8,12 +9,11 @@ from gui.filters_bar import FiltersBar
 from gui.table_view import TableView
 from gui.actions_panel import ActionsPanel
 from gui.table_model import TableModel
-from gui.dashboard_widget import DashboardWidget
+from gui.dashboard import DashboardWidget
 from gui.runs_history_window import RunsHistoryWindow
 from gui.analytics_chart import AnalyticsChartWindow
 from db.database import Database
 from gui.actions_handler import ActionsHandler
-
 
 
 class MainWindow(QMainWindow):
@@ -24,12 +24,13 @@ class MainWindow(QMainWindow):
         
         self.db = Database("arm_testing.db")
         self.model = TableModel(self.db)
+        self.current_project = None
         
-        self._setup_ui()
-        self._connect_signals()
+        self.setup_ui()
+        self.connect_signals()
         self.load_data()
     
-    def _setup_ui(self):
+    def setup_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
@@ -47,12 +48,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.actions)
 
         self.actions_handler = ActionsHandler(self, self.db, self.table, self.load_data)
-
     
-    def _connect_signals(self):
+    def connect_signals(self):
         self.filters.filters_changed.connect(self.load_data)
+        self.table.item_selected.connect(self.on_project_selected)
         
-        # Только подключения к actions_handler
         self.actions.add_project_clicked.connect(self.actions_handler.add_project)
         self.actions.edit_project_clicked.connect(self.actions_handler.edit_project)
         self.actions.delete_project_clicked.connect(self.actions_handler.delete_project)
@@ -62,51 +62,94 @@ class MainWindow(QMainWindow):
         self.actions.run_selected_clicked.connect(self.actions_handler.run_selected)
         self.actions.run_all_clicked.connect(self.actions_handler.run_all)
         self.actions.history_clicked.connect(self.actions_handler.show_history)
-        self.actions.analytics_clicked.connect(self.actions_handler.show_analytics)        
+        self.actions.analytics_clicked.connect(self.actions_handler.show_analytics)
+        self.table.item_double_clicked.connect(self.actions_handler.show_history)            
+        
+    def on_project_selected(self, selected_item):
+        self.current_project = selected_item
+        self.update_dashboard()
     
     def load_data(self):
         filters = self.filters.get_values()
         data = self.model.load(filters)
         self.table.set_data(data)
         
-        # Обновляем фильтры
         projects = self.db.get_projects()
         self.filters.set_projects(projects)
         
-        # Группы из загруженных данных
         groups = sorted(set(item.get("group") for item in data if item.get("group")))
         self.filters.set_groups(groups)
         
-        self._update_dashboard()
+        self.update_dashboard()
     
-    def _update_dashboard(self):
-        projects = self.db.get_projects()
-        print(f"DEBUG: projects = {projects}")
+    def get_current_project_data(self):
+        """Получает данные о текущем проекте (выбранном в таблице)"""
+        current_project_name = "--"
+        active_tests_count = 0
+        last_run_info = None
+        dynamic_stats = None
+        failed_tests = []
+        flaky_tests = []
+        slow_tests = []
         
-        projects_count = len(projects)
+        if self.current_project:
+            current_project_name = self.current_project.get("project_name", "--")
+            current_root_path = self.current_project.get("root_path", "")
+            print(f"LOG: selected project: {current_project_name}, root_path={current_root_path}")
+            
+            if current_root_path:
+                from pathlib import Path
+                from db.database import Database
+                from db.analytics import AnalyticsRepo
+                
+                local_db_path = Path(current_root_path) / ".arm" / "arm_testing.db"
+                if local_db_path.exists():
+                    print(f"LOG: local_db_path exists")
+                    local_db = Database(str(local_db_path))
+                    analytics = AnalyticsRepo(local_db)
+                    
+                    test_cases = local_db.get_test_cases(1)
+                    active_tests_count = sum(1 for t in test_cases if t[4] == 1)
+                    last_run_info = analytics.get_last_run_info()
+                    dynamic_stats = analytics.get_dynamic_stats()
+                    failed_tests = analytics.get_failed_tests_last_run()
+                    flaky_tests = analytics.get_flaky_tests()
+                    slow_tests = analytics.get_slow_tests()
+                    
+                    print(f"LOG: active_tests={active_tests_count}, last_run={last_run_info is not None}")
+                else:
+                    print(f"LOG: local_db_path NOT found")
         
+        return {
+            "project_name": current_project_name,
+            "active_tests": active_tests_count,
+            "last_run": last_run_info,
+            "dynamic_stats": dynamic_stats,
+            "failed_tests": failed_tests,
+            "flaky_tests": flaky_tests,
+            "slow_tests": slow_tests
+        }
+    
+    def get_global_stats(self, projects):
+        """Собирает глобальную статистику по всем проектам"""
         total_runs = 0
         total_passed = 0
         total_tests = 0
         last_runs = []
         
         for proj_id, proj_name, _, root_path in projects:
-            print(f"DEBUG: checking {proj_name}, root_path={root_path}")
             if not root_path:
-                print(f"DEBUG: {proj_name} skipped - no root_path")
                 continue
             
             from pathlib import Path
             from db.database import Database
             
             local_db_path = Path(root_path) / ".arm" / "arm_testing.db"
-            print(f"DEBUG: local_db_path = {local_db_path}, exists={local_db_path.exists()}")
             if not local_db_path.exists():
                 continue
             
             local_db = Database(str(local_db_path))
-            runs = local_db.get_test_runs(1)  # project_id = 1 в локальной БД
-            print(f"DEBUG: {proj_name} runs count = {len(runs)}")
+            runs = local_db.get_test_runs(1)
             total_runs += len(runs)
             
             for run in runs[:5]:
@@ -120,8 +163,33 @@ class MainWindow(QMainWindow):
         last_runs.sort(key=lambda x: x[2], reverse=True)
         pass_rate = (total_passed / total_tests * 100) if total_tests > 0 else 0
         
-        self.dashboard.update_stats(projects_count, total_runs, pass_rate, last_runs[:3])
+        return {
+            "projects_count": len(projects),
+            "total_runs": total_runs,
+            "pass_rate": pass_rate,
+            "last_runs": last_runs[:3]
+        }
     
+    def update_dashboard(self):
+        projects = self.db.get_projects()
+        
+        current_data = self.get_current_project_data()
+        global_data = self.get_global_stats(projects)
+        
+        self.dashboard.update_stats(
+            global_data["projects_count"],
+            global_data["total_runs"],
+            global_data["pass_rate"],
+            global_data["last_runs"],
+            project_name=current_data["project_name"],
+            active_tests=current_data["active_tests"],
+            last_run=current_data["last_run"],
+            dynamic_stats=current_data["dynamic_stats"],
+            failed_tests=current_data["failed_tests"],
+            flaky_tests=current_data["flaky_tests"],
+            slow_tests=current_data["slow_tests"]
+        )
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

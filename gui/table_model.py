@@ -48,11 +48,16 @@ class TableModel:
                         continue
                     results = tests_db.get_test_results_by_run(run_id)
                     for r in results:
-                        r_test_name = r[0] if r[0] else ""
-                        r_test_path = r[1] if r[1] else ""
-                        if (test_name and test_name in r_test_name) or (test_path and test_path in r_test_path):
-                            last_status = r[2]
-                            last_error = r[3] if r[3] else ""
+                        # r = (result_id, run_id, test_id, test_function_name, test_file_path, status, execution_time, error_message)
+                        r_test_id = r[2]
+                        r_test_name = r[3] if r[3] else ""
+                        r_test_path = r[4] if r[4] else ""
+                        r_status = r[5]
+                        r_error = r[7] if len(r) > 7 and r[7] else ""
+                        
+                        if r_test_id == test_id:
+                            last_status = r_status
+                            last_error = r_error
                             last_run_time = start_time[:19] if start_time else ""
                             break
                     if last_status:
