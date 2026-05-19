@@ -1,12 +1,11 @@
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 
-from config import PROJECT_ROOT
 from gui.add_edit_test_dialog import AddEditTestDialog
 from gui.test_runner import TestRunner
 
 
-def add_test(parent, db, project_id):
+def add_test(parent, db, project_id, project_root):
     """
     Добавляет тест.
     
@@ -14,6 +13,7 @@ def add_test(parent, db, project_id):
         parent: родительское окно
         db: Database объект (уже с правильным db_path)
         project_id: ID проекта
+        project_root: корень проекта (для преобразования пути)
     """
     dialog = AddEditTestDialog(parent, edit_mode=False)
     if dialog.exec() != AddEditTestDialog.DialogCode.Accepted:
@@ -22,7 +22,7 @@ def add_test(parent, db, project_id):
     data = dialog.get_data()
     path = Path(data["test_path"])
     try:
-        rel_path = str(path.relative_to(PROJECT_ROOT))
+        rel_path = str(path.relative_to(project_root))
     except ValueError:
         rel_path = data["test_path"]
     
@@ -30,7 +30,7 @@ def add_test(parent, db, project_id):
     return True
 
 
-def edit_test(parent, db, test_id):
+def edit_test(parent, db, test_id, project_root):
     """
     Редактирует тест.
     
@@ -38,6 +38,7 @@ def edit_test(parent, db, test_id):
         parent: родительское окно
         db: Database объект (уже с правильным db_path)
         test_id: ID теста
+        project_root: корень проекта (для преобразования пути)
     """
     test_data = db.get_test_case_by_id(test_id)
     if not test_data:
@@ -49,7 +50,13 @@ def edit_test(parent, db, test_id):
         return False
     
     new_data = dialog.get_data()
-    db.update_test_case(test_id, new_data["name"], new_data["group_name"], new_data["test_path"], new_data["is_active"])
+    path = Path(new_data["test_path"])
+    try:
+        rel_path = str(path.relative_to(project_root))
+    except ValueError:
+        rel_path = new_data["test_path"]
+    
+    db.update_test_case(test_id, new_data["name"], new_data["group_name"], rel_path, new_data["is_active"])
     return True
 
 

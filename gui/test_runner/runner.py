@@ -64,7 +64,4 @@ class TestRunner:
         # Показываем предупреждение о ненайденных тестах
         show_not_found_warning(parent, not_found)
         
-        # Открываем окно с результатами
-        from gui.run_results_window import RunResultsWindow
-        results_window = RunResultsWindow(run_id, str(context.db_path), parent)
-        results_window.exec()
+        QMessageBox.information(parent, "Запуск завершён", f"Тестов пройдено: {total_passed}, упало: {total_failed}")

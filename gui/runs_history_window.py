@@ -4,7 +4,6 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTableWidget,
 from PySide6.QtCore import Qt, QDate
 from datetime import datetime, timedelta
 from db.database import Database
-from gui.run_results_window import RunResultsWindow
 
 class RunsHistoryWindow(QDialog):
     def __init__(self, project_id, db_path, parent=None):

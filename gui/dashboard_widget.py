@@ -65,15 +65,8 @@ class DashboardWidget(QWidget):
         return card
     
     def update_stats(self, projects_count, runs_count, pass_rate, last_runs):
-        """
-        Обновляет статистику на дашборде
+        print(f"DEBUG dashboard: last_runs = {last_runs}")
         
-        Args:
-            projects_count: int — количество проектов
-            runs_count: int — общее количество запусков
-            pass_rate: float — процент пройденных тестов (0-100)
-            last_runs: list — список последних запусков [(project_name, status, run_id), ...]
-        """
         # Обновляем карточки
         self.card_projects.findChild(QLabel, "value") or self._update_card_value(
             self.card_projects, str(projects_count if projects_count is not None else 0)
@@ -98,10 +91,9 @@ class DashboardWidget(QWidget):
         self._update_card_value(self.card_last, text, is_last=True)
     
     def _update_card_value(self, card, value, is_last=False):
-        """Обновляет значение в карточке"""
         for child in card.findChildren(QLabel):
             if child.font().pointSize() == 18 or is_last:
                 child.setText(value)
                 if is_last:
                     child.setStyleSheet("font-size: 11px;")
-                return
+        card.update()  # принудительная перерисовка
