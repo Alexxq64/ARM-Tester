@@ -1,3 +1,4 @@
+# db/connection.py
 import sqlite3
 from pathlib import Path
 
@@ -48,6 +49,7 @@ class DBConnection:
                     group_name TEXT,
                     test_path TEXT NOT NULL,
                     is_active INTEGER DEFAULT 1,
+                    test_params TEXT DEFAULT '{}',
                     FOREIGN KEY (project_id) REFERENCES projects (project_id) ON DELETE CASCADE
                 )
             """)
@@ -108,5 +110,11 @@ class DBConnection:
                     FOREIGN KEY (run_id) REFERENCES test_runs (run_id) ON DELETE CASCADE
                 )
             """)
+            
+            # Добавляем колонку test_params для существующих БД
+            cur.execute("PRAGMA table_info(test_cases)")
+            columns = [col[1] for col in cur.fetchall()]
+            if "test_params" not in columns:
+                cur.execute("ALTER TABLE test_cases ADD COLUMN test_params TEXT DEFAULT '{}'")
             
             conn.commit()

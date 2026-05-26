@@ -25,3 +25,9 @@ class ProjectsRepo(DBConnection):
                 (name, description, root_path, project_id)
             )
             conn.commit()
+    
+    def delete_project(self, project_id):
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM projects WHERE project_id = ?", (project_id,))
+            conn.commit()

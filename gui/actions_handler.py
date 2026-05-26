@@ -1,3 +1,4 @@
+# gui/actions_handler.py
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox
 from db.database import Database
@@ -57,7 +58,6 @@ class ActionsHandler:
             name, desc, root_path = dialog.get_data()
             self.db.update_project(project_data[0], name, desc, root_path)
             
-            # Обновляем .arm/ если изменился путь
             if root_path and root_path != project_data[3]:
                 context = ProjectContext(Path(root_path))
                 context.ensure_dirs()
@@ -71,11 +71,12 @@ class ActionsHandler:
             return
         
         project_name = selected.get("project_name")
+        root_path = self._get_root_path(project_name)
         
         reply = QMessageBox.question(
             self.parent,
             "Подтверждение удаления",
-            f"Удалить проект \"{project_name}\"?\nВсе тесты и результаты будут удалены.",
+            f"Удалить проект \"{project_name}\"?\nВсе тесты и результаты будут удалены.\n\nВНИМАНИЕ: Папка .arm/ проекта будет полностью удалена.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
@@ -85,6 +86,14 @@ class ActionsHandler:
                 if p[1] == project_name:
                     self.db.delete_project(p[0])
                     break
+            
+            # Удаляем локальную БД
+            if root_path:
+                import shutil
+                arm_path = Path(root_path) / ".arm"
+                if arm_path.exists():
+                    shutil.rmtree(arm_path)
+            
             self.load_data()
     
     def add_test(self):
@@ -136,7 +145,6 @@ class ActionsHandler:
         from db.database import Database
         local_db = Database(str(local_db_path))
         
-        # Находим тест по имени
         tests = local_db.get_test_cases(1)
         test_data = None
         for t in tests:
@@ -159,7 +167,7 @@ class ActionsHandler:
         dialog = AddEditTestDialog(self.parent, edit_mode=True, test_data=test_info)
         if dialog.exec() == AddEditTestDialog.DialogCode.Accepted:
             new_data = dialog.get_data()
-            local_db.update_test_case(test_data[0], new_data["name"], new_data["group_name"], new_data["test_path"], new_data["is_active"])
+            local_db.update_test_case(test_data[0], new_data["name"], new_data["group_name"], new_data["test_path"], new_data["is_active"], new_data.get("test_params", "{}"))
             self.load_data()
     
     def delete_test(self):
@@ -201,13 +209,11 @@ class ActionsHandler:
             self.load_data()
     
     def run_selected(self):
-        # Получаем выделенные строки
         selected_rows = self.table.get_selected_test_ids()
         if not selected_rows:
             QMessageBox.warning(self.parent, "Ошибка", "Выберите тесты для запуска.")
             return
         
-        # Собираем test_id из выделенных строк
         test_ids = []
         project_name = None
         root_path = None
@@ -233,22 +239,18 @@ class ActionsHandler:
             QMessageBox.warning(self.parent, "Ошибка", "Локальная БД проекта не найдена.")
             return
         
-        # Создаём контекст проекта
         context = ProjectContext(Path(root_path))
         context.ensure_dirs()
         
-        # Запускаем тесты
         TestRunner.run_tests(self.parent, context, 1, test_ids)
         self.load_data()
 
     def run_all(self):
-        # Получаем выделенные строки
         selected_rows = self.table.get_selected_test_ids()
         if not selected_rows:
             QMessageBox.warning(self.parent, "Ошибка", "Выберите проект для запуска всех тестов.")
             return
         
-        # Берём проект из первой выделенной строки
         if hasattr(self.table, 'full_data') and selected_rows[0] < len(self.table.full_data):
             item = self.table.full_data[selected_rows[0]]
             project_name = item.get("project_name")
@@ -269,7 +271,6 @@ class ActionsHandler:
         from db.database import Database
         local_db = Database(str(local_db_path))
         
-        # Получаем все активные тесты
         tests = local_db.get_test_cases(1)
         active_ids = [t[0] for t in tests if t[4] == 1]
         

@@ -1,3 +1,4 @@
+# gui/dashboard/alerts_mode.py
 """Режим тревог — три карточки с проблемными тестами"""
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QScrollArea

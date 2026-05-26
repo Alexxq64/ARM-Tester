@@ -14,8 +14,8 @@ def get_failed_tests_last_run(db, limit=5):
         if status in ("failed", "error"):
             test = db.get_test_case_by_id(test_id)
             if test:
-                # test_id, name, group_name, test_path, is_active
-                _, name, group, _, _ = test
+                name = test.get('name', '')
+                group = test.get('group_name', '')
                 failed.append({
                     "test_id": test_id,
                     "test_name": name,

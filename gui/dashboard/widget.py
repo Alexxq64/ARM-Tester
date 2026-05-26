@@ -1,3 +1,4 @@
+# gui/dashboard/widget.py
 """Основной виджет дашборда с переключателем режимов"""
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel

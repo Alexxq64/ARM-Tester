@@ -97,7 +97,6 @@ class ProjectContext:
     def ensure_dirs(self) -> None:
         """Создаёт все директории .arm/ и добавляет .gitignore"""
         if self._is_fallback:
-            # временная папка уже создана в _check_permissions
             return
         
         dirs = [
@@ -115,6 +114,11 @@ class ProjectContext:
         gitignore_path = self.arm_dir / ".gitignore"
         if not gitignore_path.exists():
             gitignore_path.write_text("# Автоматически создано АРМ тестировщика\n*\n!.gitignore\n")
+        
+        # Создаём базу данных, если её нет
+        if not self.db_path.exists():
+            from db.database import Database
+            Database(str(self.db_path), include_projects=False)
     
     def get_run_config_path(self, run_id: int) -> Path:
         """Возвращает путь к файлу конфигурации запуска для Repeat"""

@@ -1,5 +1,7 @@
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QDialogButtonBox, QMessageBox, QPushButton, QHBoxLayout, QFileDialog
+# gui/add_edit_test_dialog.py
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QDialogButtonBox, QMessageBox, QPushButton, QHBoxLayout, QFileDialog, QPlainTextEdit
 from pathlib import Path
+import json
 
 class AddEditTestDialog(QDialog):
     def __init__(self, parent=None, edit_mode=False, test_data=None):
@@ -23,12 +25,18 @@ class AddEditTestDialog(QDialog):
         path_layout.addWidget(self.path_edit)
         path_layout.addWidget(self.browse_btn)
         
+        # Поле параметров
+        self.params_edit = QPlainTextEdit()
+        self.params_edit.setPlaceholderText('{"timeout": 30, "url": "http://localhost"}')
+        self.params_edit.setMaximumHeight(80)
+        
         self.active_check = QCheckBox()
         self.active_check.setChecked(True)
 
         form.addRow("Название:", self.name_edit)
         form.addRow("Группа:", self.group_edit)
         form.addRow("Путь к тесту:", path_layout)
+        form.addRow("Параметры (JSON):", self.params_edit)
         form.addRow("Активен:", self.active_check)
 
         layout.addLayout(form)
@@ -37,6 +45,7 @@ class AddEditTestDialog(QDialog):
             self.name_edit.setText(test_data.get("name", ""))
             self.group_edit.setText(test_data.get("group_name", ""))
             self.path_edit.setText(test_data.get("test_path", ""))
+            self.params_edit.setPlainText(test_data.get("test_params", "{}"))
             self.active_check.setChecked(test_data.get("is_active", 1) == 1)
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -58,7 +67,8 @@ class AddEditTestDialog(QDialog):
             "name": self.name_edit.text().strip(),
             "group_name": self.group_edit.text().strip(),
             "test_path": self.path_edit.text().strip(),
-            "is_active": 1 if self.active_check.isChecked() else 0
+            "is_active": 1 if self.active_check.isChecked() else 0,
+            "test_params": self.params_edit.toPlainText().strip() or "{}"
         }
 
     def accept(self):
@@ -69,4 +79,12 @@ class AddEditTestDialog(QDialog):
         if not data["test_path"]:
             QMessageBox.warning(self, "Ошибка", "Путь к тесту не может быть пустым.")
             return
+        
+        # Валидация JSON
+        try:
+            json.loads(data["test_params"])
+        except json.JSONDecodeError as e:
+            QMessageBox.warning(self, "Ошибка", f"Некорректный JSON в параметрах:\n{e}")
+            return
+        
         super().accept()

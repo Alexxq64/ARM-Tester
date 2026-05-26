@@ -1,7 +1,6 @@
 # gui/main_window.py
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
@@ -10,8 +9,6 @@ from gui.table_view import TableView
 from gui.actions_panel import ActionsPanel
 from gui.table_model import TableModel
 from gui.dashboard import DashboardWidget
-from gui.runs_history_window import RunsHistoryWindow
-from gui.analytics_chart import AnalyticsChartWindow
 from db.database import Database
 from gui.actions_handler import ActionsHandler
 
@@ -95,7 +92,6 @@ class MainWindow(QMainWindow):
         if self.current_project:
             current_project_name = self.current_project.get("project_name", "--")
             current_root_path = self.current_project.get("root_path", "")
-            print(f"LOG: selected project: {current_project_name}, root_path={current_root_path}")
             
             if current_root_path:
                 from pathlib import Path
@@ -104,7 +100,6 @@ class MainWindow(QMainWindow):
                 
                 local_db_path = Path(current_root_path) / ".arm" / "arm_testing.db"
                 if local_db_path.exists():
-                    print(f"LOG: local_db_path exists")
                     local_db = Database(str(local_db_path))
                     analytics = AnalyticsRepo(local_db)
                     
@@ -115,10 +110,6 @@ class MainWindow(QMainWindow):
                     failed_tests = analytics.get_failed_tests_last_run()
                     flaky_tests = analytics.get_flaky_tests()
                     slow_tests = analytics.get_slow_tests()
-                    
-                    print(f"LOG: active_tests={active_tests_count}, last_run={last_run_info is not None}")
-                else:
-                    print(f"LOG: local_db_path NOT found")
         
         return {
             "project_name": current_project_name,

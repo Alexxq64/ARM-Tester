@@ -23,16 +23,22 @@ class ReportGenerator:
         results_data = db.get_test_results_by_run(run_id)
         
         total_tests = len(results_data)
-        passed = sum(1 for r in results_data if r[2] == "passed")
-        failed = sum(1 for r in results_data if r[2] == "failed")
+        passed = sum(1 for r in results_data if r[5] == "passed")
+        failed = sum(1 for r in results_data if r[5] == "failed")
         
         results = []
-        for func_name, file_path, status, error in results_data:
+        for r in results_data:
+            # r = (result_id, run_id, test_id, func_name, file_path, status, exec_time, error)
+            func_name = r[3] if r[3] else ""
+            file_path = r[4] if r[4] else ""
+            status = r[5]
+            error = r[7] if r[7] else ""
+            
             results.append({
-                "test_name": func_name if func_name else "?",
+                "test_name": func_name if func_name else Path(file_path).stem,
                 "file_path": file_path,
                 "status": status,
-                "error_message": error if error else ""
+                "error_message": error
             })
         
         template_dir = Path(__file__).parent

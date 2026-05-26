@@ -1,3 +1,4 @@
+# gui/table_model.py
 from pathlib import Path
 from db.database import Database
 
@@ -11,15 +12,27 @@ class TableModel:
         data = []
         
         for proj_id, proj_name, _, root_path in projects:
-            # Фильтр по проекту
             if filters.get("project") and filters["project"] != "Все проекты":
                 if filters["project"] != proj_name:
                     continue
             
-            # Определяем, какую БД использовать для тестов
             if root_path:
                 local_db_path = Path(root_path) / ".arm" / "arm_testing.db"
                 if not local_db_path.exists():
+                    # Проект без локальной БД — показываем пустую строку
+                    data.append({
+                        "project_name": proj_name,
+                        "test_name": "",
+                        "group": "",
+                        "last_run": "",
+                        "status": "",
+                        "error": "",
+                        "project_id": proj_id,
+                        "test_id": None,
+                        "root_path": root_path or "",
+                        "test_path": "",
+                        "test_params": "{}",
+                    })
                     continue
                 tests_db = Database(str(local_db_path))
                 local_project_id = 1
@@ -29,15 +42,31 @@ class TableModel:
             
             tests = tests_db.get_test_cases(local_project_id)
             
+            if not tests:
+                # Проект без тестов — показываем пустую строку
+                data.append({
+                    "project_name": proj_name,
+                    "test_name": "",
+                    "group": "",
+                    "last_run": "",
+                    "status": "",
+                    "error": "",
+                    "project_id": proj_id,
+                    "test_id": None,
+                    "root_path": root_path or "",
+                    "test_path": "",
+                    "test_params": "{}",
+                })
+                continue
+            
             for test in tests:
-                test_id, test_name, group, test_path, is_active = test
+                test_id, test_name, group, test_path, is_active = test[:5]
+                test_params = test[5] if len(test) > 5 else "{}"
                 
-                # Фильтр по группе
                 if filters.get("group") and filters["group"] != "Все группы":
                     if group != filters["group"]:
                         continue
                 
-                # Получаем последний статус
                 last_status = None
                 last_error = None
                 last_run_time = None
@@ -48,10 +77,7 @@ class TableModel:
                         continue
                     results = tests_db.get_test_results_by_run(run_id)
                     for r in results:
-                        # r = (result_id, run_id, test_id, test_function_name, test_file_path, status, execution_time, error_message)
                         r_test_id = r[2]
-                        r_test_name = r[3] if r[3] else ""
-                        r_test_path = r[4] if r[4] else ""
                         r_status = r[5]
                         r_error = r[7] if len(r) > 7 and r[7] else ""
                         
@@ -63,7 +89,6 @@ class TableModel:
                     if last_status:
                         break
                 
-                # Фильтр по статусу
                 if filters.get("status") and filters["status"] != "Все":
                     if last_status != filters["status"]:
                         continue
@@ -79,9 +104,9 @@ class TableModel:
                     "test_id": test_id,
                     "root_path": root_path or "",
                     "test_path": test_path or "",
+                    "test_params": test_params,
                 })
         
-        # Фильтр по поиску (название теста)
         search = filters.get("search", "").lower()
         if search:
             data = [item for item in data if search in item.get("test_name", "").lower()]

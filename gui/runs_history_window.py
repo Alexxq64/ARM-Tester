@@ -1,3 +1,4 @@
+# gui/runs_history_window.py
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTableWidget,
                                QTableWidgetItem, QHeaderView, QPushButton,
                                QDateEdit, QLabel, QMessageBox)
@@ -99,12 +100,9 @@ class RunsHistoryWindow(QDialog):
         self.load_runs()
 
     def load_runs(self):
-        print(f"DEBUG: project_id = {self.project_id}")
-        print(f"DEBUG: db_path = {self.db_path}")
         db = Database(self.db_path)
         date_from, date_to = self.get_filter_params()
         runs = db.get_test_runs(self.project_id, date_from, date_to)
-        print(f"DEBUG: runs found = {len(runs)}")
 
         self.current_data = []
         for run_id, start_time, end_time, status in runs:
@@ -176,8 +174,24 @@ class RunsHistoryWindow(QDialog):
         if len(run_ids) != 1:
             QMessageBox.warning(self, "Ошибка", "Выберите один запуск для просмотра результатов.")
             return
-        results_window = RunResultsWindow(run_ids[0], self.db_path, self)
-        results_window.exec()
+        
+        # Показываем результаты в отдельном окне (создадим позже или покажем в сообщении)
+        from db.database import Database
+        db = Database(self.db_path)
+        results = db.get_test_results_by_run(run_ids[0])
+        
+        if not results:
+            QMessageBox.information(self, "Результаты", "Нет результатов для этого запуска.")
+            return
+        
+        text = f"Результаты запуска {run_ids[0]}:\n\n"
+        for r in results[:20]:
+            # r = (result_id, run_id, test_id, func_name, file_path, status, exec_time, error)
+            status = r[5]
+            name = r[3] or r[4] or str(r[2])
+            text += f"{'✅' if status == 'passed' else '❌'} {name} — {status}\n"
+        
+        QMessageBox.information(self, "Результаты", text)
 
     def delete_selected(self):
         run_ids = self.get_selected_run_ids()

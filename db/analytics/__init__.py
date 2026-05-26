@@ -1,3 +1,4 @@
+# db/analytics/__init__.py
 from db.analytics.last_run import get_last_run_info
 from db.analytics.failed_tests import get_failed_tests_last_run
 from db.analytics.flaky_tests import get_flaky_tests

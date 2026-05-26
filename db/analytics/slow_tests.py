@@ -13,7 +13,8 @@ def get_slow_tests(db, threshold_sec=5.0, limit=5):
         if exec_time and exec_time > threshold_sec:
             test = db.get_test_case_by_id(test_id)
             if test:
-                _, name, group, _, _ = test
+                name = test.get('name', '')
+                group = test.get('group_name', '')
                 slow.append({
                     "test_id": test_id,
                     "test_name": name,

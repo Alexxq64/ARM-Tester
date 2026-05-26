@@ -72,12 +72,10 @@ class ReportsListWindow(QDialog):
             QMessageBox.warning(self, "Ошибка", f"Файл не найден:\n{file_path}")
             return
         
-        # Конвертируем WSL-путь в Windows-путь
-        # /mnt/c/Users/User/Desktop/... -> C:\Users\User\Desktop\...
-        win_path = file_path.replace("/mnt/c/", "C:/").replace("/", "\\")
-        
-        # Открываем через cmd.exe start
-        subprocess.Popen(["cmd.exe", "/c", "start", "", win_path])
+        try:
+            subprocess.run(["firefox", file_path], check=False)
+        except Exception as e:
+            QMessageBox.warning(self, "Ошибка", f"Не удалось открыть файл:\n{e}")
 
     def delete_report(self):
         selected = self.get_selected_report()

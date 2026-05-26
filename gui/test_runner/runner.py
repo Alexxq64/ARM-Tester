@@ -1,3 +1,4 @@
+# gui/test_runner/runner.py
 from datetime import datetime
 from PySide6.QtWidgets import QMessageBox
 
@@ -21,7 +22,7 @@ class TestRunner:
         # Используем БД внутри .arm/
         db = Database(str(context.db_path))
         
-        # Проверяем существование тестов
+        # Проверяем существование тестов (возвращает 5 элементов: tid, name, rel_path, full_path, params)
         valid_tests, not_found = validate_tests(db, test_ids, context.project_root)
         
         if not valid_tests:
@@ -37,17 +38,13 @@ class TestRunner:
         total_failed = 0
         
         # Запускаем каждый тест
-        for tid, test_name, test_rel_path, full_path in valid_tests:
-            print(f"DEBUG: Running test {test_name} from {full_path}")
-            print(f"DEBUG: python_path = {context.python_path}")
-            
+        for tid, test_name, test_rel_path, full_path, test_params in valid_tests:
             test_results = PytestExecutor.run_single_test(
                 context.python_path,
                 full_path,
-                context.project_root
+                context.project_root,
+                test_params
             )
-            
-            print(f"DEBUG: test_results = {test_results}")
             
             t, p, f = ResultSaver.save_results(
                 db, run_id, test_results, tid, test_rel_path
@@ -60,6 +57,17 @@ class TestRunner:
         end_time = datetime.now().isoformat()
         overall_status = "passed" if total_failed == 0 else "failed"
         db.update_test_run(run_id, end_time, overall_status)
+        
+        # Автоматически генерируем HTML-отчёт
+        try:
+            from reports.report_generator import ReportGenerator
+            reports_dir = context.project_root / "reports" / "generated"
+            reports_dir.mkdir(parents=True, exist_ok=True)
+            output_path = reports_dir / f"report_run_{run_id}.html"
+            ReportGenerator.generate_report(run_id, str(output_path), str(context.db_path))
+            db.add_report(run_id, str(output_path), datetime.now().isoformat())
+        except Exception as e:
+            print(f"Ошибка создания отчёта: {e}")
         
         # Показываем предупреждение о ненайденных тестах
         show_not_found_warning(parent, not_found)

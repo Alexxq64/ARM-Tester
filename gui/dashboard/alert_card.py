@@ -1,7 +1,7 @@
 """Карточка для режима тревог"""
 
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QWidget
-from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QWidget, QHBoxLayout
+from PySide6.QtCore import Signal, Qt
 
 
 class AlertCard(QFrame):
@@ -10,9 +10,10 @@ class AlertCard(QFrame):
     def __init__(self, title, card_type, parent=None):
         super().__init__(parent)
         self.card_type = card_type
-        self._setup_ui(title)
+        self.title = title
+        self._setup_ui()
     
-    def _setup_ui(self, title):
+    def _setup_ui(self):
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setStyleSheet("""
             QFrame{background:white;border:1px solid #ddd;border-radius:8px;margin:2px;}
@@ -21,7 +22,7 @@ class AlertCard(QFrame):
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
         
-        title_label = QLabel(title)
+        title_label = QLabel(self.title)
         title_label.setStyleSheet("font-weight:bold;font-size:13px;padding:5px;background:#f0f0f0;border-radius:4px;")
         layout.addWidget(title_label)
         
@@ -41,7 +42,7 @@ class AlertCard(QFrame):
         if not items:
             placeholder = QLabel("✅ Нет проблем")
             placeholder.setStyleSheet("color:#888;padding:10px;")
-            placeholder.setAlignment(QLabel.AlignmentFlag.AlignCenter)
+            placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.list_layout.addWidget(placeholder)
             return
         

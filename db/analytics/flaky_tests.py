@@ -24,7 +24,8 @@ def get_flaky_tests(db, runs_count=5, change_threshold=2):
         if changes >= change_threshold:
             test = db.get_test_case_by_id(test_id)
             if test:
-                _, name, group, _, _ = test
+                name = test.get('name', '')
+                group = test.get('group_name', '')
                 flaky.append({
                     "test_id": test_id,
                     "test_name": name,

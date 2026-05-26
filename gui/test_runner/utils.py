@@ -1,4 +1,5 @@
 from pathlib import Path
+from PySide6.QtWidgets import QMessageBox
 
 
 def validate_tests(db, test_ids, project_root):
@@ -7,7 +8,7 @@ def validate_tests(db, test_ids, project_root):
     
     Returns:
         tuple: (valid_tests, not_found)
-        valid_tests: list of (tid, name, rel_path, full_path)
+        valid_tests: list of (tid, name, rel_path, full_path, test_params)
         not_found: list of (name, rel_path)
     """
     valid_tests = []
@@ -22,7 +23,7 @@ def validate_tests(db, test_ids, project_root):
         
         if full_path.exists():
             valid_tests.append(
-                (tid, t["name"], t["test_path"], full_path)
+                (tid, t["name"], t["test_path"], str(full_path), t.get("test_params", "{}"))
             )
         else:
             not_found.append(
