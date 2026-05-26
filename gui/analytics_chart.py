@@ -17,6 +17,7 @@ from db.database import Database
 class AnalyticsChartWindow(QDialog):
     def __init__(self, project_id, db_path, parent=None):
         super().__init__(parent)
+        self.setStyleSheet("background-color: #fafafa;")
         self.project_id = project_id
         self.db_path = db_path
         self.setWindowTitle("Динамика прохождения тестов")

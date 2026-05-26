@@ -6,6 +6,7 @@ import json
 class AddEditTestDialog(QDialog):
     def __init__(self, parent=None, edit_mode=False, test_data=None):
         super().__init__(parent)
+        self.setStyleSheet("background-color: #e0e0e0;")
         self.edit_mode = edit_mode
         self.test_data = test_data
         self.setWindowTitle("Редактировать тест" if edit_mode else "Добавить тест")

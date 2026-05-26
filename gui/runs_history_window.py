@@ -9,6 +9,7 @@ from db.database import Database
 class RunsHistoryWindow(QDialog):
     def __init__(self, project_id, db_path, parent=None):
         super().__init__(parent)
+        self.setStyleSheet("background-color: #eef2f5;")
         self.project_id = project_id
         self.db_path = db_path
         self.setWindowTitle("История запусков")

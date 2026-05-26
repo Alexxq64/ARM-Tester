@@ -16,6 +16,7 @@ from gui.actions_handler import ActionsHandler
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setStyleSheet("background-color: #e8e8e8;")
         self.setWindowTitle("АРМ управления тестированием")
         self.setMinimumSize(1000, 700)
         

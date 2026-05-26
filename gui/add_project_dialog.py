@@ -8,6 +8,7 @@ from pathlib import Path
 class AddProjectDialog(QDialog):
     def __init__(self, parent=None, edit_mode=False, project_data=None):
         super().__init__(parent)
+        self.setStyleSheet("background-color: #e0e0e0;")
         self.edit_mode = edit_mode
         self.project_data = project_data  # (project_id, name, description, root_path)
         

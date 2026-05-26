@@ -10,6 +10,7 @@ from db.database import Database
 class ReportsListWindow(QDialog):
     def __init__(self, run_id, db_path, parent=None):
         super().__init__(parent)
+        self.setStyleSheet("background-color: #e0e0e0;")
         self.run_id = run_id
         self.db_path = db_path
         self.setWindowTitle(f"Отчёты для запуска #{run_id}")
