@@ -1,12 +1,11 @@
+# gui/login_window.py
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton, QMessageBox
-
-LOGIN = "tester"
-PASSWORD = "12345"
-
+from db.database import Database
 
 class LoginWindow(QDialog):
-    def __init__(self):
+    def __init__(self, db_path="arm_testing.db"):
         super().__init__()
+        self.db = Database(db_path)
         self.setWindowTitle("Авторизация")
         self.setFixedSize(300, 150)
 
@@ -28,7 +27,11 @@ class LoginWindow(QDialog):
         self.setLayout(layout)
 
     def check_auth(self):
-        if self.login_edit.text() == LOGIN and self.password_edit.text() == PASSWORD:
+        user = self.db.get_user(
+            self.login_edit.text(),
+            self.password_edit.text()
+        )
+        if user:
             self.accept()
         else:
             QMessageBox.warning(self, "Ошибка", "Неверный логин или пароль")

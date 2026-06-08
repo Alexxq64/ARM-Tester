@@ -40,6 +40,19 @@ class DBConnection:
             if not include_projects:
                 cur.execute("INSERT OR IGNORE INTO projects (project_id, name, description, root_path) VALUES (1, 'local_project', '', '')")
             
+            # Только для глобальной БД создаём таблицу users и добавляем тестового пользователя
+            if include_projects:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL UNIQUE,
+                        password TEXT NOT NULL
+                    )
+                """)
+                cur.execute("SELECT COUNT(*) FROM users")
+                if cur.fetchone()[0] == 0:
+                    cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("tester", "12345"))
+            
             # Тестовые сценарии
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS test_cases (

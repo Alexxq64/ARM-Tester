@@ -13,6 +13,7 @@ from db.database import Database
 from gui.actions_handler import ActionsHandler
 from gui.login_window import LoginWindow
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -183,16 +184,10 @@ class MainWindow(QMainWindow):
         )
 
 
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     window = MainWindow()
-#     window.show()
-#     sys.exit(app.exec())
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    login_window = LoginWindow()
+    login_window = LoginWindow("arm_testing.db")
     if login_window.exec():
         window = MainWindow()
         window.show()
