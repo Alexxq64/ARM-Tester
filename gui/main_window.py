@@ -11,7 +11,7 @@ from gui.table_model import TableModel
 from gui.dashboard import DashboardWidget
 from db.database import Database
 from gui.actions_handler import ActionsHandler
-
+from gui.login_window import LoginWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -183,8 +183,17 @@ class MainWindow(QMainWindow):
         )
 
 
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     window = MainWindow()
+#     window.show()
+#     sys.exit(app.exec())
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+    
+    login_window = LoginWindow()
+    if login_window.exec():
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec())
